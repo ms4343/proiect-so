@@ -1,0 +1,47 @@
+#!/bin/bash
+
+db=./components
+
+add () {
+    read -p "Name: " name
+    read -p "Category: " category
+    read -p "Price: " price
+    if grep -qF "$name  " "$db"; then
+        echo "$name already exists."
+        return 1
+    fi
+    printf "%s\t%s\t%s\n" "$name" "$category" "$price" >> "$db"
+    echo "Added successfully."
+}
+
+view_db () {
+    cat "$db"
+}
+
+delete () {
+    read -p "Component name to delete: " name
+    sed -e /"$name"/d $db > $db.new
+    mv $db.new $db
+    echo "Entry deleted."
+}
+
+update () {
+    read -p "Component name: " name
+    if ! grep -qF "$name" "$db"; then
+        echo "'$name' not found."
+        return 1
+    fi
+    echo -e "Which field?\n  2) Category\n  3) Price\n  4) Stock"
+    read -p "Field number: " fn
+    read -p "New value: " val
+    awk -F$'\t' -v name="$name" -v fn="$fn" -v val="$val" \
+        'BEGIN{OFS="\t"} $1==name{$fn=val} {print}' "$db" > "$db".new
+    mv "$db".new "$db"
+    echo "Updated."
+}
+
+
+search () {
+    read -p "Search term: " term
+    grep -iF "$term" "$db"
+}
