@@ -1,16 +1,16 @@
-#!/bin/bash
-
 db=./components
 
 add () {
     read -p "Name: " name
     read -p "Category: " category
     read -p "Price: " price
-    if grep -qF "$name  " "$db"; then
+    read -p "Stock: " stock
+    read -p "Product code: " pcode
+    if grep -qF "$name" "$db"; then
         echo "$name already exists."
         return 1
     fi
-    printf "%s\t%s\t%s\n" "$name" "$category" "$price" >> "$db"
+    printf "%s\t%s\t%s\t%s\n" "$name" "$category" "$price" "$stock" "$pcode" >> "$db"
     echo "Added successfully."
 }
 
@@ -20,8 +20,12 @@ view_db () {
 
 delete () {
     read -p "Component name to delete: " name
-    sed -e /"$name"/d $db > $db.new
-    mv $db.new $db
+    if ! grep -qi "$name" "$db"; then
+        echo "'$name' not found."
+        return 1
+    fi
+    sed -e "/$name/d" "$db" > "$db".new
+    mv -f "$db".new "$db"
     echo "Entry deleted."
 }
 
@@ -31,15 +35,15 @@ update () {
         echo "'$name' not found."
         return 1
     fi
-    echo -e "Which field?\n  2) Category\n  3) Price\n  4) Stock"
+    echo -e "Which field?\n  2) Category\n  3) Price\n  4) Stock\n  5) Product code\n"
     read -p "Field number: " fn
     read -p "New value: " val
-    awk -F$'\t' -v name="$name" -v fn="$fn" -v val="$val" \
-        'BEGIN{OFS="\t"} $1==name{$fn=val} {print}' "$db" > "$db".new
-    mv "$db".new "$db"
+    TAB=$(printf '\t')
+    awk -F"$TAB" -v name="$name" -v fn="$fn" -v val="$val" \
+        'BEGIN{OFS="\t"} index($1,name){$fn=val} {print}' "$db" > "$db".new
+    mv -f "$db".new "$db"
     echo "Updated."
 }
-
 
 search () {
     read -p "Search term: " term

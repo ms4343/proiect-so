@@ -1,35 +1,16 @@
 #!/bin/bash
 
-#while true
-#do
-#select OPTION in view add delete update search out
-#do
-#case $OPTION in
-#view) more stud;;
-#add) add_f # Calling the add function 
-#;;
-#delete) delete_f # Calling the delete function  
-#;;
-#update) update_f # Calling the update function  
-#;;
-#search) search_f # Calling the search function  
-#;;
-#out) echo Bye-bye!; exit 0;;
-#*) echo "ERROR: Invalid selection";;
-#esac
-#done
-#done
-
-
 db=./components
-. functions
-if [ ! -f $db ]; then
+. ./functions
+
+if [ ! -f "$db" ]; then
     echo "`basename $db` does not exist!"
     exit 1
 fi
 
 while true
 do
+    echo ""
     echo "1) Add"
     echo "2) View"
     echo "3) Delete"
@@ -44,7 +25,7 @@ do
     3) delete ;;
     4) update ;;
     5) search ;;
-    0) exit 1 ;;
+    0) echo "Bye-bye!"; exit 0 ;;
     *) echo "Invalid option!" ;;
     esac
 done
