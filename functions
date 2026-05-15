@@ -1,16 +1,16 @@
 db=./components
 
 add () {
-    read -p "Name: " name
-    read -p "Category: " category
-    read -p "Price: " price
-    read -p "Stock: " stock
-    read -p "Product code: " pcode
+    read -p "       Name: " name
+    read -p "       Category: " category
+    read -p "       Price: " price
+    read -p "       Stock: " stock
+    read -p "       Product code: " pcode
     if grep -qF "$name" "$db"; then
         echo "$name already exists."
         return 1
     fi
-    printf "%s\t%s\t%s\t%s\n" "$name" "$category" "$price" "$stock" "$pcode" >> "$db"
+    printf "%s\t%s\t%s\t%s\%s\t\n" "$name" "$category" "$price" "$stock" "$pcode" >> "$db"
     echo "Added successfully."
 }
 

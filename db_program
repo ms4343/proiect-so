@@ -29,6 +29,7 @@ do
     echo -e "      0) Exit\n"
 
     read -p "       Choose an option: " opt
+    echo -e "\n"
     case $opt in
     1) add ;;
     2) view_db ;;
