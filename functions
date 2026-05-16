@@ -1,43 +1,137 @@
-db=./components
+db=./parts
 
 add () {
-    read -p "       Name: " name
-    read -p "       Category: " category
-    read -p "       Price: " price
-    read -p "       Stock: " stock
-    read -p "       Product code: " pcode
+    read -p "Name: " name
     if grep -qF "$name" "$db"; then
         echo "$name already exists."
         return 1
     fi
-    printf "%s\t%s\t%s\t%s\%s\t\n" "$name" "$category" "$price" "$stock" "$pcode" >> "$db"
+
+    category_options=("CPU" "GPU" "MOTHERBOARD" "MEMORY" "STORAGE" "CASE" "PSU")
+    b=0
+    while [ $b -eq 0 ]; do
+        read -p "Category: " category
+        category=${category^^}
+        for opt in "${category_options[@]}"; do
+            if [ $opt == $category ]; then
+                b=1
+                break
+            fi
+        done
+        if [ $b -eq 0 ]; then
+            echo -e "Invalid category. Options are: "
+            for opt in "${category_options[@]}"; do
+                echo "  $opt"
+            done
+        fi
+    done
+
+    while true; do
+        read -p "Price: " price
+        if [[ "$price" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+            break
+        fi
+        echo "Invalid price. Enter a number."
+    done
+
+    while true; do
+        read -p "Stock: " stock
+        if [[ "$stock" =~ ^[0-9]+$ ]]; then
+            break
+        fi
+        echo "Invalid stock. Enter a whole number."
+    done
+
+    while true; do
+        read -p "Product code: " pcode
+        if [ -n "$pcode" ]; then
+            break
+        fi
+        echo "Product code cannot be empty."
+    done
+
+    printf "%s\t%s\t%s\t%s\t%s\n" "$name" "$category" "$price" "$stock" "$pcode" >> "$db"
     echo "Added successfully."
 }
 
 view_db () {
-    cat "$db"
+    (echo -e "Name\tCategory\tPrice (lei)\tStock\tProductCode"; cat "$db") | column -t -s $'\t'
 }
 
 delete () {
-    read -p "Component name to delete: " name
-    if ! grep -qi "$name" "$db"; then
+    read -p "Part name to delete: " name
+    if ! grep -qiF "$name" "$db"; then
         echo "'$name' not found."
         return 1
     fi
-    sed -e "/$name/d" "$db" > "$db".new
-    mv -f "$db".new "$db"
-    echo "Entry deleted."
+
+    matches=`grep -iF "$name" "$db"`
+    count=`echo "$matches" | wc -l`
+
+    if [ $count -gt 1 ]; then
+        echo "Found $count parts:"
+        echo "$matches" | nl
+        echo ""
+        echo "1) Delete a specific part"
+        echo "2) Delete all matches"
+        read -p "Choose: " choice
+        case $choice in
+        1)
+            read -p "Entry number: " num
+            target=`echo "$matches" | sed -n "${num}p" | awk -F"$(printf '\t')" '{print $1}'`
+            read -p "Are you sure you want to delete '$target'? (y/n): " confirm
+            if [ "$confirm" == "y" ]; then
+                sed -e "/^$target	/d" "$db" > "$db".new
+                mv -f "$db".new "$db"
+                echo "Part deleted."
+            else
+                echo "Cancelled."
+            fi
+            ;;
+        2)
+            read -p "Are you sure you want to delete all matching parts? (y/n): " confirm
+            if [ "$confirm" == "y" ]; then
+                grep -ivF "$name" "$db" > "$db".new
+                mv -f "$db".new "$db"
+                echo "All matching parts deleted."
+            else
+                echo "Cancelled."
+            fi
+            ;;
+        *)
+            echo "Invalid option."
+            ;;
+        esac
+    else
+        read -p "Are you sure you want to delete '$name'? (y/n): " confirm
+        if [ "$confirm" == "y" ]; then
+            sed -e "/^$name	/d" "$db" > "$db".new
+            mv -f "$db".new "$db"
+            echo "Part deleted."
+        else
+            echo "Cancelled."
+        fi
+    fi
 }
 
 update () {
-    read -p "Component name: " name
+    read -p "Part name: " name
     if ! grep -qF "$name" "$db"; then
         echo "'$name' not found."
         return 1
     fi
     echo -e "Which field?\n  2) Category\n  3) Price\n  4) Stock\n  5) Product code\n"
-    read -p "Field number: " fn
+    while true; do
+        read -p "Field number: " fn
+        if [[ "$fn" =~ ^[2-5]$ ]]; then
+            break
+        fi
+        echo "Invalid field. Enter a number between 2 and 5."
+    done
     read -p "New value: " val
+    if [ "$fn" -eq 2 ]; then
+        val=${val^^}
+    fi
     TAB=$(printf '\t')
     awk -F"$TAB" -v name="$name" -v fn="$fn" -v val="$val" \
         'BEGIN{OFS="\t"} index($1,name){$fn=val} {print}' "$db" > "$db".new
@@ -47,5 +141,5 @@ update () {
 
 search () {
     read -p "Search term: " term
-    grep -iF "$term" "$db"
+    (echo -e "Name\tCategory\tPrice (lei)\tStock\tProductCode"; grep -iF "$term" "$db") | column -t -s $'\t'
 }
